@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PSP Web Player</title>
+<style>
+:root{color-scheme:dark;--accent:#68e3a1;--muted:#b0bacb}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#27334a,#10131b 68%);color:#f4f6fb;font:16px system-ui,sans-serif}
+main{width:min(960px,100%);margin:auto;padding:22px 14px 36px}header{text-align:center;margin:8px 0 20px}h1{font-size:clamp(25px,5vw,38px);margin:0 0 6px}header p,.hint{color:var(--muted)}
+.panel{background:#1b2130f2;border:1px solid #303b51;border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 12px 32px #0003}
+input[type=file]{width:100%;padding:12px;border:1px dashed #59657c;border-radius:10px;background:#121722;color:var(--muted)}
+.row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.row button{flex:1}
+button{border:0;border-radius:12px;padding:12px 14px;background:#30394d;color:#fff;font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+button.primary{background:var(--accent);color:#102018}button:disabled{opacity:.45}
+#status{color:var(--muted);font-size:14px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere}
+#game{width:100%;min-height:250px;aspect-ratio:16/9;background:#050608;border-radius:12px;overflow:hidden;position:relative}
+.hint{font-size:13px;line-height:1.55}.notice{border-left:3px solid #e9bd66;padding-left:11px}
+</style>
+</head>
+<body><main>
+<header><h1>🎮 PSP Web Player</h1><p>Launcher HTML untuk game PSP berbentuk ISO</p></header>
+<section class="panel">
+<strong>1. Pilih file game PSP</strong>
+<p class="hint">Pilih file ISO/CSO yang kamu miliki. File game tidak disertakan di halaman ini.</p>
+<input id="rom" type="file" accept=".iso,.cso,application/octet-stream">
+<div class="row"><button id="start" class="primary" disabled>▶ Muat & Main</button><button id="pause" disabled>⏸ Jeda</button><button id="reload" disabled>↻ Muat ulang</button></div>
+<div id="status">Pilih file ISO/CSO terlebih dahulu. PSP di browser memerlukan dukungan browser dan server yang sesuai.</div>
+</section>
+<section class="panel"><strong>2. Layar permainan</strong><p></p>
+<div id="game"><div style="height:100%;min-height:250px;display:grid;place-items:center;color:#8f9ab0;text-align:center;padding:18px">Layar game akan muncul di sini setelah emulator dimuat.</div></div>
+<p class="hint">Kontrol sentuh biasanya tersedia di antarmuka emulator.</p></section>
+<section class="panel"><strong>Catatan penting</strong>
+<p class="hint notice">PSP menggunakan fitur browser khusus (threads/SharedArrayBuffer). Membuka HTML langsung dari file manager Android sering tidak memenuhi syarat tersebut. Jika muncul “Error for site owner”, itu biasanya berasal dari pemuatan layanan luar, bukan bukti bahwa ISO rusak. File HTML saja tidak bisa menjamin game PSP berjalan.</p></section>
+</main>
+<script>
+(() => {
+ const input=document.getElementById('rom'),start=document.getElementById('start'),pause=document.getElementById('pause'),reload=document.getElementById('reload'),status=document.getElementById('status'),game=document.getElementById('game');
+ let file=null,url=null,script=null;
+ const say=t=>status.textContent=t;
+ input.addEventListener('change',()=>{file=input.files&&input.files[0]||null;start.disabled=!file;if(file)say('File dipilih: '+file.name+' ('+(file.size/1048576).toFixed(1)+' MB). Tekan Muat & Main.')});
+ function load(){
+  if(!file)return;
+  if(url){URL.revokeObjectURL(url);url=null}
+  if(script){script.remove();script=null}
+  game.innerHTML='<div style="height:100%;min-height:250px;display:grid;place-items:center;color:#8f9ab0;text-align:center;padding:18px">Memuat emulator PSP…</div>';
+  say('Memuat emulator. Jika muncul error layanan atau layar kosong, halaman perlu dijalankan dari server HTTPS yang mendukung cross-origin isolation.');
+  url=URL.createObjectURL(file);
+  window.EJS_player='#game';
+  window.EJS_core='ppsspp';
+  window.EJS_gameUrl=url;
+  window.EJS_gameName=file.name;
+  window.EJS_pathtodata='https://cdn.emulatorjs.org/stable/data/';
+  window.EJS_threads=true;
+  window.EJS_startOnLoaded=true;
+  window.EJS_color='#68e3a1';
+  window.EJS_onGameStart=()=>say('Emulator mulai. Jika layar tetap kosong, kemungkinan dukungan PSP/browser tidak cocok.');
+  window.EJS_onLoad=()=>say('Emulator dimuat; sedang menyiapkan game…');
+  script=document.createElement('script');
+  script.src='https://cdn.emulatorjs.org/stable/data/loader.js';
+  script.async=true;
+  script.onerror=()=>say('Gagal memuat loader EmulatorJS. Periksa internet atau CDN sedang tidak tersedia.');
+  document.body.appendChild(script);
+  pause.disabled=false;reload.disabled=false;
+ }
+ start.addEventListener('click',load);
+ pause.addEventListener('click',()=>say('Tombol jeda umum tidak tersedia di semua build. Gunakan menu kontrol emulator jika sudah muncul.'));
+ reload.addEventListener('click',load);
+ window.addEventListener('beforeunload',()=>{if(url)URL.revokeObjectURL(url)});
+})();
+</script></body></html>
